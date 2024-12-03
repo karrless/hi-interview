@@ -11,6 +11,7 @@ def sample_task() -> Task:
         Task: task
     """
     return Task(
+        id = 1,
         title="Task 1",
         description="Description 1",
         category="Category 1",
@@ -42,6 +43,7 @@ def test_task_creation(sample_task: Task) -> None:
         sample_task (Task): sample task
     """
     task = sample_task
+    assert task.id == 1
     assert task.title == "Task 1"
     assert task.description == "Description 1"
     assert task.category == "Category 1"
@@ -51,7 +53,7 @@ def test_task_creation(sample_task: Task) -> None:
     assert isinstance(task.id, int)
 
 
-def test_complere_task(sample_task: Task) -> None:
+def test_complete_task(sample_task: Task) -> None:
     """
     Test complete task
 
@@ -61,6 +63,22 @@ def test_complere_task(sample_task: Task) -> None:
     task = sample_task
     task.complete()
     assert task.status
+
+def test_update_task(sample_task: Task) -> None:
+    """
+    Test update task
+
+    Args:
+        sample_task (Task): sample task
+    """
+    task = sample_task
+    task.update("Task 2", "Description 2", "Category 2", "2003-12-28", Priority.MEDIUM)
+    assert task.id == 1
+    assert task.title == "Task 2"
+    assert task.description == "Description 2"
+    assert task.category == "Category 2"
+    assert task.due_date == "28.12.2003"
+    assert task.priority == Priority.MEDIUM
 
 
 def test_to_dict(sample_task: Task) -> None:

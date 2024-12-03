@@ -3,9 +3,8 @@ Containts task class
 """
 
 from enum import Enum
-from dateutil import parser # type: ignore
+from dateutil import parser  # type: ignore
 from typing import Self
-import uuid
 
 
 class Priority(Enum):
@@ -48,21 +47,23 @@ class Task:
     Task
 
     Attributes:
+        id (int): task id
         title (str): task title
         description (str): task description
         category (str): task category
         due_date (str): task due date
-        priority (Priority): task priority
-        status (bool): task status
+        priority (Priority): task priority. Defaults to Priority.LOW
+        status (bool): task status. Defaults to False.
     """
 
     def __init__(
         self,
+        id: int,
         title: str,
         description: str,
         category: str,
         due_date: str,
-        priority: Priority,
+        priority: Priority = Priority.LOW,
         status: bool = False,
     ):
         """
@@ -75,12 +76,12 @@ class Task:
             due_date (str): task due date
             priority (Priority): task priority
             status (bool, optional): task status. Defaults to False.
-        
+
         Raises:
             ValueError: Invalid date
         """
 
-        self.id: int = uuid.uuid4().int
+        self.id: int = id
         self.title: str = title
         self.description: str = description
         self.category: str = category
@@ -88,11 +89,40 @@ class Task:
         self.priority: Priority = priority
         self.status: bool = status
 
-    def complete(self)-> None:
+    def complete(self) -> None:
         """
         Complete task
         """
         self.status = True
+
+    def update(
+        self,
+        title: str | None = None,
+        description: str | None = None,
+        category: str | None = None,
+        due_date: str | None = None,
+        priority: Priority | None = None,
+    ) -> None:
+        """
+        Update task
+
+        Args:
+            title (str | None): new title
+            description (str | None): new description
+            category (str | None): new category
+            due_date (str | None): new due date
+            priority (Priority | None): new priority
+
+        Raises:
+            ValueError: Invalid date
+        """
+        self.title = title if title else self.title
+        self.description = description if description else self.description
+        self.category = category if category else self.category
+        self.due_date = (
+            validate_and_format_date(due_date) if due_date else self.due_date
+        )
+        self.priority = priority if priority else self.priority
 
     def to_dict(self) -> dict:
         """
@@ -116,6 +146,15 @@ class Task:
             "priority": self.priority.value,
             "status": self.status,
         }
+
+    def __repr__(self) -> str:
+        text = (
+            f'{self.id}. {self.title} --> {self.due_date}\n'
+            f'\t{self.description}\n'
+            f'\t{self.category} ({self.priority.name})\n'
+            f'\t{"Выполнено" if self.status else "Не выполнено"}\n'
+        )
+        return text
 
     @classmethod
     def from_dict(cls: type[Self], task_data: dict) -> Self:
@@ -147,6 +186,7 @@ class Task:
         """
         try:
             task = cls(
+                id=task_data["id"],
                 title=task_data["title"],
                 description=task_data["description"],
                 category=task_data["category"],

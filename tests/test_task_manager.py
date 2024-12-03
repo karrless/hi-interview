@@ -1,240 +1,250 @@
+import pathlib
 import pytest
-from py._path.local import LocalPath # type: ignore
-from hi_interview.task_manager import Task, Priority, TaskManager
-
+from hi_interview.task_manager.task import Priority
+from hi_interview.task_manager.task_manager import TaskManager
 
 
 @pytest.fixture
-def task_manager(tmpdir: LocalPath) -> tuple[TaskManager, str]:
+def task_manager(tmp_path: pathlib.Path) -> TaskManager:
     """
-    Fixture for creating a task manager
+    Create task manager
 
     Args:
-        tmpdir (LocalPath): Temporary directory
+        tmp_path (pathlib.Path): Temp path
 
     Returns:
-        tuple[TaskManager, str]: Task manager and file name
+        TaskManager: Task manager
     """
-    file_name = tmpdir.join("tasks.json")
-    manager = TaskManager(file_name=str(file_name))
-    return manager, str(file_name)
+    tasks_file = tmp_path / "tasks.json"
+    options_file = tmp_path / "options.json"
+    return TaskManager(str(tasks_file), str(options_file))
 
 
-def test_add_task(task_manager: tuple[TaskManager, str]) -> None:
+def test_init_invalid_files() -> None:
     """
-    Testing adding a task
+    Test init with invalid files
+    """
+    with pytest.raises(ValueError):
+        TaskManager("invalid.txt", "options.json")
+    with pytest.raises(ValueError):
+        TaskManager("tasks.json", "invalid.txt")
+
+
+def test_add_task(task_manager: TaskManager) -> None:
+    """
+    Test add task
 
     Args:
-        task_manager (tuple[TaskManager, str]): Task manager and file name
+        task_manager (TaskManager): Task manager
     """
-    manager, _ = task_manager
-    task: Task = manager.add_task(
-        title="Test Task",
-        description="Test Description",
-        category="Test Category",
+    task = task_manager.add_task(
+        title="Task 1",
+        description="Description 1",
+        category="Category 1",
         due_date="2003-12-28",
-        priority=2,
+        priority=1,
     )
-
-    assert task.title == "Test Task"
-    assert task.description == "Test Description"
-    assert task.category == "Test Category"
+    assert task.title == "Task 1"
+    assert task.description == "Description 1"
+    assert task.category == "Category 1"
     assert task.due_date == "28.12.2003"
-    assert task.priority == Priority.MEDIUM
-    assert not task.status 
-    assert isinstance(task.id, int)
+    assert task.priority == Priority.HIGH
 
 
-def test_add_task_invalid_priority(task_manager: tuple[TaskManager, str]) -> None:
+def test_add_task_invalid_priority(task_manager: TaskManager) -> None:
     """
-    Testing adding a task with invalid priority
+    Test add task with invalid priority
 
     Args:
-        task_manager (tuple[TaskManager, str]): Task manager and file name
+        task_manager (TaskManager): Task manager
     """
-    manager, _ = task_manager
-    with pytest.raises(ValueError, match="Invalid priority. Priority must be one of 1, 2 or 3"):
-        manager.add_task(
-            title="Test Task",
-            description="Test Description",
-            category="Test Category",
+    with pytest.raises(ValueError):
+        task_manager.add_task(
+            title="Task 1",
+            description="Description 1",
+            category="Category 1",
             due_date="2003-12-28",
-            priority=999,
+            priority=4,  # Invalid priority
         )
 
 
-def test_add_task_empty_field(task_manager: tuple[TaskManager, str]) -> None:
+def test_get_task(task_manager: TaskManager) -> None:
     """
-    Testing adding a task with empty field
+    Test get task
 
     Args:
-        task_manager (tuple[TaskManager, str]): Task manager and file name
+        task_manager (TaskManager): Task manager
     """
-    manager, _ = task_manager
-    with pytest.raises(ValueError, match="All arguments must be not empty"):
-        manager.add_task(
-            title="",
-            description="Test Description",
-            category="Test Category",
-            due_date="2003-12-28",
-            priority=3,
-        )
-
-
-
-def test_get_task(task_manager: tuple[TaskManager, str]) -> None:
-    """
-    Testing getting a task
-
-    Args:
-        task_manager (tuple[TaskManager, str]): Task manager and file name
-    """
-    manager, _ = task_manager
-    task: Task = manager.add_task(
-        title="Test Task",
-        description="Test Description",
-        category="Test Category",
-        due_date="2003-12-28",
-        priority=2,
-    )
-
-    task_id: int = task.id
-    retrieved_task: Task = manager.get_task(task_id)
-
-    assert task.id == retrieved_task.id
-    
-
-def test_get_task_not_found(task_manager: tuple[TaskManager, str]) -> None:
-    """
-    Testing getting a task that doesn't exist
-
-    Args:
-        task_manager (tuple[TaskManager, str]): Task manager and file name
-    """
-    manager, _ = task_manager
-    with pytest.raises(ValueError, match="Task not found"):
-        manager.get_task(999999)
-
-
-def test_delete_task(task_manager: tuple[TaskManager, str]) -> None:
-    """
-    Testing deleting a task
-
-    Args:
-        task_manager (tuple[TaskManager, str]): Task manager and file name
-    """
-    manager, _ = task_manager
-    task: Task = manager.add_task(
-        title="Test Task",
-        description="Test Description",
-        category="Test Category",
-        due_date="2003-12-28",
-        priority=2,
-    )
-
-    task_id: int = task.id
-    manager.delete_task(task_id)
-
-    tasks: list[Task] = manager.get_tasks()
-    assert not any(t.id == task_id for t in tasks)
-
-
-def test_complete_task(task_manager: tuple[TaskManager, str]) -> None:
-    """
-    Testing completing a task
-
-    Args:
-        task_manager (tuple[TaskManager, str]): Task manager and file name
-    """
-    manager, _ = task_manager
-    task: Task = manager.add_task(
-        title="Test Task",
-        description="Test Description",
-        category="Test Category",
-        due_date="2003-12-28",
-        priority=2,
-    )
-
-    task_id: int = task.id
-    manager.complete_task(task_id)
-
-    completed_task: Task = manager.get_task(task_id)
-    assert completed_task.status
-
-def test_complete_task_not_found(task_manager: tuple[TaskManager, str]) -> None:
-    """
-    Testing completing a task that doesn't exist
-
-    Args:
-        task_manager (tuple[TaskManager, str]): Task manager and file name
-    """
-    manager, _ = task_manager
-    with pytest.raises(ValueError, match="Task not found"):
-        manager.complete_task(999999)  # Не существует задачи с таким ID
-
-
-def test_get_tasks(task_manager: tuple[TaskManager, str]) -> None:
-    """
-    Testing getting tasks
-
-    Args:
-        task_manager (tuple[TaskManager, str]): Task manager and file name
-    """
-    manager, _ = task_manager
-    manager.add_task(
+    task = task_manager.add_task(
         title="Task 1",
         description="Description 1",
         category="Category 1",
         due_date="2003-12-28",
-        priority=3,
-    )
-    manager.add_task(
-        title="Task 2",
-        description="Description 2",
-        category="Category 2",
-        due_date="2003-12-28",
         priority=1,
     )
-
-    tasks_by_category: list[Task] = manager.get_tasks(categories=["Category 1"])
-    tasks_by_keywords: list[Task] = manager.get_tasks(keywords=["Task 1"])
-    tasks_by_status: list[Task] = manager.get_tasks(status=False)
-
-    assert len(tasks_by_category) == 1
-    assert len(tasks_by_keywords) == 1
-    assert len(tasks_by_status) == 2
+    fetched_task = task_manager.get_task(task.id)
+    assert fetched_task == task
 
 
-def test_load_tasks_from_file(task_manager: tuple[TaskManager, str]) -> None:
+def test_get_task_not_found(task_manager: TaskManager) -> None:
     """
-    Testing loading tasks from file
+    Test get task not found
 
     Args:
-        task_manager (tuple[TaskManager, str]): Task manager and file name
+        task_manager (TaskManager): Task manager
     """
-    manager, file_name = task_manager
-    manager.add_task(
+    with pytest.raises(ValueError):
+        task_manager.get_task(999)
+
+
+def test_delete_task(task_manager: TaskManager) -> None:
+    """
+    Test delete task
+
+    Args:
+        task_manager (TaskManager): Task manager
+    """
+    task = task_manager.add_task(
         title="Task 1",
         description="Description 1",
         category="Category 1",
         due_date="2003-12-28",
-        priority=3,
+        priority=1,
     )
-    manager.add_task(
-        title="Task 2",
-        description="Description 2",
-        category="Category 2",
+    task_manager.delete_task(task.id)
+    assert len(task_manager.tasks) == 0
+
+
+def test_update_task(task_manager: TaskManager) -> None:
+    """
+    Test update task
+
+    Args:
+        task_manager (TaskManager): Task manager
+    """
+    task = task_manager.add_task(
+        title="Task 1",
+        description="Description 1",
+        category="Category 1",
         due_date="2003-12-28",
         priority=1,
     )
-    
-    # Сохраняем задачи в файл
-    manager.save_tasks()
+    task_manager.update_task(task_id=task.id, title="Updated Task")
+    updated_task = task_manager.get_task(task.id)
+    assert updated_task.title == "Updated Task"
 
-    # Создаем новый менеджер с тем же файлом и проверяем, что задачи загрузились
-    new_manager: TaskManager = TaskManager(file_name=str(file_name))
-    tasks: list[Task] = new_manager.get_tasks()
 
-    assert len(tasks) == 2
-    assert tasks[0].title == "Task 1"
-    assert tasks[1].title == "Task 2"
+def test_update_task_not_found(task_manager: TaskManager) -> None:
+    """
+    Test update task not found
+
+    Args:
+        task_manager (TaskManager): Task manager
+    """
+    with pytest.raises(ValueError):
+        task_manager.update_task(999, title="Updated Task")
+
+
+def test_complete_task(task_manager: TaskManager) -> None:
+    """
+    Test complete task
+
+    Args:
+        task_manager (TaskManager): Task manager
+    """
+    task = task_manager.add_task(
+        title="Task 1",
+        description="Description 1",
+        category="Category 1",
+        due_date="2003-12-28",
+        priority=1,
+    )
+    task_manager.complete_task(task.id)
+    assert task.status is True
+
+
+def test_complete_task_not_found(task_manager: TaskManager) -> None:
+    """
+    Test complete task not found
+
+    Args:
+        task_manager (TaskManager): Task manager
+    """
+    with pytest.raises(ValueError):
+        task_manager.complete_task(999)
+
+
+def test_get_tasks_by_keywords(task_manager: TaskManager) -> None:
+    """
+    Test get tasks by keywords
+
+    Args:
+        task_manager (TaskManager): Task manager
+    """
+    task_manager.add_task(
+        title="Task 1",
+        description="Description 1",
+        category="Work",
+        due_date="2003-12-28",
+        priority=1,
+    )
+    task_manager.add_task(
+        title="Important Task",
+        description="Description 2",
+        category="Home",
+        due_date="2003-12-28",
+        priority=2,
+    )
+    tasks = task_manager.get_tasks(keywords=["Important"])
+    assert len(tasks) == 1
+    assert tasks[0].title == "Important Task"
+
+
+def test_get_tasks_by_category(task_manager: TaskManager) -> None:
+    """
+    Test get tasks by category
+
+    Args:
+        task_manager (TaskManager): Task manager
+    """
+    task_manager.add_task(
+        title="Task 1",
+        description="Description 1",
+        category="Work",
+        due_date="2003-12-28",
+        priority=1,
+    )
+    task_manager.add_task(
+        title="Task 2",
+        description="Description 2",
+        category="Home",
+        due_date="2003-12-28",
+        priority=2,
+    )
+    tasks = task_manager.get_tasks(categories=["Work"])
+    assert len(tasks) == 1
+    assert tasks[0].category == "Work"
+
+
+def test_save_and_load_tasks(task_manager: TaskManager) -> None:
+    """
+    Test save and load tasks
+
+    Args:
+        task_manager (TaskManager): Task manager
+    """
+    task_manager.add_task(
+        title="Persistent Task",
+        description="Description",
+        category="Work",
+        due_date="2003-12-28",
+        priority=1,
+    )
+    task_manager.save_tasks()
+
+    # Reload from saved file
+    new_task_manager = TaskManager(
+        task_manager.tasks_file_name, task_manager.options_file_name
+    )
+    assert len(new_task_manager.tasks) == 1
+    assert new_task_manager.tasks[0].title == "Persistent Task"

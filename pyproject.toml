@@ -4,17 +4,21 @@ version = "0.1.0"
 description = "HT company interview test assignment written in Python"
 authors = ["karrless <konstantin.geydarov@gmail.com>"]
 readme = "README.md"
-package-mode = false
+packages = [{include = "hi_interview"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
 python-dateutil = "^2.9.0.post0"
+fire = "^0.7.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
 mypy = "^1.13.0"
 ruff = "^0.8.1"
 py = "^1.11.0"
+
+[tool.poetry.scripts]
+tasks = "hi_interview.__main__:main"
 
 [build-system]
 requires = ["poetry-core"]
